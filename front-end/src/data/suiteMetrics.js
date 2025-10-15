@@ -126,6 +126,7 @@ export function computeSuiteMetrics(agentList = agents) {
       conversionLift: Number(((avgOutcome / (meta.baselineOutcome || global.outcomeIndex || 1) - 1) * 100).toFixed(1)),
       autopilot: avgAutopilot,
       autopilotGap: Number((avgAutopilot - autopilotTarget).toFixed(1)),
+      autopilotTarget,
       bill: entry.bill,
       billShare,
       cpr: Number(avgCpr.toFixed(2)),

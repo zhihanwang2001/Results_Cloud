@@ -1,11 +1,14 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AgentCard from '../components/cards/AgentCard.vue'
 import { agents, groupAgentsBySuite, toSuiteAnchor } from '../data/agents'
 import { computeSuiteMetrics } from '../data/suiteMetrics'
 
 const keyword = ref('')
 const selectedSuite = ref('')
+const route = useRoute()
+const router = useRouter()
 
 const suiteSnapshot = computed(() => computeSuiteMetrics(agents))
 const globalSnapshot = computed(() => suiteSnapshot.value.global)
@@ -57,8 +60,49 @@ const quickSuites = computed(() =>
 )
 
 function setSuite(value) {
-  selectedSuite.value = selectedSuite.value === value ? '' : value
+  const nextValue = selectedSuite.value === value ? '' : value
+  selectedSuite.value = nextValue
+  const nextQuery = { ...route.query }
+  if (nextValue) {
+    nextQuery.suite = nextValue
+  } else {
+    delete nextQuery.suite
+    delete nextQuery.action
+  }
+  router.replace({ query: nextQuery })
 }
+
+const staffingBanner = computed(() => {
+  const suiteKey = route.query.suite
+  const action = route.query.action
+  if (!suiteKey || !action) return ''
+  const targetSuite = suiteOverview.value.find((item) => item.suite === suiteKey)
+  const label = targetSuite?.alias || suiteKey
+  if (action === 'increase') {
+    return `${label} 建议调度加人，查看套系内硅基员工补位。`
+  }
+  if (action === 'decrease') {
+    return `${label} 建议精简人力，确认 Autopilot 稳定后调配班次。`
+  }
+  return ''
+})
+
+watch(
+  () => route.query.suite,
+  (suite) => {
+    selectedSuite.value = (suite ?? '')
+    if (suite) {
+      nextTick(() => {
+        const anchor = toSuiteAnchor(suite)
+        const target = document.getElementById(anchor)
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      })
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -69,19 +113,19 @@ function setSuite(value) {
         <h1 class="page__title">硅基员工阵列，即刻一键上岗</h1>
         <p class="page__subtitle">快速浏览 BR 套系硅基员工，了解模型能力、SLA 指标与 Autopilot 覆盖率，匹配业务所需角色。</p>
       </div>
-      <div class="store__stats">
-        <div>
-          <p class="store__stats-label">Autopilot 平均</p>
-          <p class="store__stats-value">{{ globalSnapshot.autopilot }}%</p>
-        </div>
-        <div>
-          <p class="store__stats-label">Outcome 平均</p>
-          <p class="store__stats-value">{{ globalSnapshot.outcomeIndex }}</p>
-        </div>
-        <div>
-          <p class="store__stats-label">可上岗角色</p>
-          <p class="store__stats-value">{{ totalAgents }}</p>
-        </div>
+      <div class="page__hero-stats">
+        <article class="hero-stat">
+          <span>Autopilot 平均</span>
+          <strong>{{ globalSnapshot.autopilot }}%</strong>
+        </article>
+        <article class="hero-stat">
+          <span>Outcome 平均</span>
+          <strong>{{ globalSnapshot.outcomeIndex }}</strong>
+        </article>
+        <article class="hero-stat">
+          <span>可上岗角色</span>
+          <strong>{{ totalAgents }}</strong>
+        </article>
       </div>
     </header>
 
@@ -96,6 +140,8 @@ function setSuite(value) {
       </label>
       <p class="store__hint">已接入 ORB 指挥舱 · Outcome · Role · Bill 实时联动</p>
     </div>
+
+    <p v-if="staffingBanner" class="store__hint store__hint--action">{{ staffingBanner }}</p>
 
     <nav class="store__nav">
       <button

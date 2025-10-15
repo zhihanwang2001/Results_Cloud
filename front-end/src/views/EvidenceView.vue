@@ -141,9 +141,11 @@ const availableTypes = [
         <h2>实时亮点</h2>
         <div class="evidence__highlight-grid">
           <article v-for="item in highlightCards" :key="item.id" class="highlight-card">
-            <span class="highlight-card__suite">{{ item.suiteAlias }}</span>
-            <h3>{{ item.metric }}</h3>
-            <p>{{ item.title }}</p>
+            <div class="highlight-card__header">
+              <span class="highlight-card__suite">{{ item.suiteAlias }}</span>
+              <span class="highlight-card__metric">{{ item.metric }}</span>
+            </div>
+            <p class="highlight-card__title">{{ item.title }}</p>
             <span class="highlight-card__meta">{{ item.type }} · {{ item.timestamp }}</span>
           </article>
         </div>
